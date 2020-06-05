@@ -10,6 +10,11 @@ use std::fs::{self, DirEntry, File};
 use std::io;
 use std::path::PathBuf;
 
+pub struct ReadFile {
+    file: &File,
+    path: &PathBuf
+}
+
 fn path_is_gitignore_file(path: &PathBuf) -> bool {
     match path.extension() {
         Some(extension) => {
@@ -77,6 +82,7 @@ fn index_of(value: &str, from: &Vec<&str>) -> Option<usize> {
     None
 }
 
-pub fn find() {
+pub fn find<'a>(from: &PathBuf, mut with: Vec<&str>) -> Result<Vec<ReadFile>> {
+    return Err(())
 }
 
