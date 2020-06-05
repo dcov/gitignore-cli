@@ -16,7 +16,7 @@ fn main() {
         }
     };
 
-    let dir = match fs::read_dir(files_dir) {
+    let _dir = match fs::read_dir(files_dir) {
         Ok(d) => d,
         _ => {
             println!("{} is not a valid directory.", ENV_HOME);
@@ -33,7 +33,7 @@ fn main() {
             .required(true))
         .get_matches();
 
-    if let Some(language_names) = matches.values_of("language_names") {
+    if let Some(_language_names) = matches.values_of("language_names") {
         let current_dir_path = match env::current_dir() {
             Ok(p) => p,
             _ => {
@@ -42,15 +42,13 @@ fn main() {
             }
         };
 
-        let write_file = match write_file::open(current_dir_path, true) {
+        let _write_file = match write_file::open(current_dir_path, true) {
             Ok(f) => f,
             _ => {
                 println!("Not in a git repository.");
                 return;
             }
         };
-
-        generator::generate(dir, language_names.collect(), write_file);
     }
 }
 
