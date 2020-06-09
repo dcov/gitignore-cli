@@ -9,7 +9,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-fn path_is_valid(path: &PathBuf, with: &Vec<&str>) -> bool {
+fn validate_path(path: &PathBuf, with: &mut Vec<&str>) -> bool {
     !path.is_dir()
     && match path.extension() {
         Some(extension) => extension == "gitignore",
@@ -17,23 +17,29 @@ fn path_is_valid(path: &PathBuf, with: &Vec<&str>) -> bool {
     }
     && match path.file_stem() {
         Some(stem) => {
-            let mut result = false;
+            let mut remove_index: Option<usize> = None;
 
             let stem = stem.to_str().unwrap().to_ascii_lowercase();
-            for with_entry in with {
-                if with_entry.to_ascii_lowercase() == stem {
-                    result = true;
+            for (index, value) in with.iter().enumerate() {
+                if value.to_ascii_lowercase() == stem {
+                    remove_index = Some(index);
                     break;
                 }
             }
 
-            result
+            if remove_index.is_some() {
+                with.remove(remove_index.unwrap());
+                true
+            } else {
+                false
+            }
         },
         None => false
     }
 }
 
 pub fn lookup<'a>(from: &PathBuf, with: &Vec<&str>) -> Vec<PathBuf> {
+    let mut with = with.clone();
     let from_dir = fs::read_dir(from).expect(
         format!("Could not read from {}", from.to_str().unwrap()).as_str());
 
@@ -41,7 +47,7 @@ pub fn lookup<'a>(from: &PathBuf, with: &Vec<&str>) -> Vec<PathBuf> {
 
     for entry_result in from_dir {
         let entry_path = entry_result.expect("Could not check a dir entry.").path();
-        if path_is_valid(&entry_path, &with) {
+        if validate_path(&entry_path, &mut with) {
             read_files.push(entry_path);
         }
     }
@@ -84,7 +90,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let dir_path = dir.path().to_path_buf();
 
-        let with = vec!["dir", "rust", "Lua", "HASKELL", "java"];
+        let with = vec!["dir", "rust", "Lua", "HASKELL", "java", "Casing"]; 
 
         // Assert that [lookup] returns an empty list when the directory doesn't
         // contain any files that match the '*.gitignore' pattern.
@@ -113,6 +119,21 @@ mod tests {
                     lookup(&dir_path, &with),
                     &mut vec![dir_path.join("rust.gitignore"), dir_path.join("java.gitignore"),
                               dir_path.join("LUA.gitignore"), dir_path.join("haskeLL.gitignore")]));
+
+        // Delete these four files to make the remaining tests easier to write/read.
+        fs::remove_file(dir_path.join("rust.gitignore")).unwrap();
+        fs::remove_file(dir_path.join("java.gitignore")).unwrap();
+        fs::remove_file(dir_path.join("LUA.gitignore")).unwrap();
+        fs::remove_file(dir_path.join("haskeLL.gitignore")).unwrap();
+
+        // Assert that when there are multiple files whose names only differ in casing 
+        // (e.g. "rust.gitignore", "Rust.gitignore", "RUST.gitignore"), [lookup] will only
+        // match the first one it encounters.
+        fs::File::create(dir_path.join("casing.gitignore")).unwrap();
+        fs::File::create(dir_path.join("CASING.gitignore")).unwrap();
+        let result = lookup(&dir_path, &with);
+        assert!(result == vec![dir_path.join("casing.gitignore")]
+             || result == vec![dir_path.join("CASING.gitignore")]);
 
         dir.close().unwrap();
     }
