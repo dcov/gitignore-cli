@@ -1,25 +1,24 @@
-use std::env;
-use std::fs;
-use clap::{Arg, App};
+//! gitignore-cli
 
-mod write_file;
+#[cfg(test)]
+#[macro_use]
+extern crate cascade;
+
 mod generator;
+mod read_paths;
+mod write_path;
+
+use std::env;
+use std::path::PathBuf;
+use clap::{Arg, App};
 
 static ENV_HOME: &str = "GITIGNORE_HOME";
 
 fn main() {
     let files_dir = match env::var(ENV_HOME) {
-        Ok(value) => value,
+        Ok(value) => PathBuf::from(value),
         _ => {
             println!("{} is not set.", ENV_HOME);
-            return;
-        }
-    };
-
-    let _dir = match fs::read_dir(files_dir) {
-        Ok(d) => d,
-        _ => {
-            println!("{} is not a valid directory.", ENV_HOME);
             return;
         }
     };
@@ -42,13 +41,11 @@ fn main() {
             }
         };
 
-        let _write_file = match write_file::open(current_dir_path, true) {
-            Ok(f) => f,
-            _ => {
-                println!("Not in a git repository.");
-                return;
-            }
-        };
+        let _write_path = write_path::lookup(&current_dir_path, false);
+
+        let _read_paths = read_paths::lookup(&files_dir, &vec![""]);
+
+        generator::generate(&_write_path, &_read_paths);
     }
 }
 

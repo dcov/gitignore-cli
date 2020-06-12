@@ -86,8 +86,8 @@ impl<'a> BlockVec {
     }
 }
 
-pub fn generate(using: &Vec<PathBuf>, into: &PathBuf) {
-    let into_contents = fs::read_to_string(into.clone()).unwrap();
+pub fn generate(into: &PathBuf, using: &Vec<PathBuf>) {
+    let into_contents = fs::read_to_string(into.clone()).unwrap_or(String::from(""));
     let mut into_lines: Vec<String> = into_contents.lines().map(|s| String::from(s)).collect();
 
     let mut block_vec = BlockVec::from(&into_lines);
@@ -117,7 +117,104 @@ pub fn generate(using: &Vec<PathBuf>, into: &PathBuf) {
                 block_vec.shift_starts_down(block_index + 1, size_diff.abs() as usize);
             }
         } else {
+            if !into_lines.is_empty() && !into_lines.last().unwrap().is_empty() {
+                // Push an empty line in between the last line and the lines we're going to add
+                into_lines.push(String::from(""));
+            }
+
+            into_lines.push(format!("{}{}{}", BLOCK_PREFIX, BLOCK_START, file_stem));
+            for line in new_lines {
+                into_lines.push(String::from(line));
+            }
+            into_lines.push(format!("{}{}{}", BLOCK_PREFIX, BLOCK_END, file_stem));
+            into_lines.push(String::from(""));
         }
+    }
+
+    let result = into_lines.join("\n");
+    fs::write(into, result.as_bytes())
+        .expect(format!("Failed to write result to {}", into.to_str().unwrap()).as_str());
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use cascade;
+    use tempfile;
+
+    fn format_as_block(stem: &str, contents: &str) -> String {
+        format!("{}{}{}\n{}\n{}{}{}",
+            BLOCK_PREFIX, BLOCK_START, stem,
+            contents,
+            BLOCK_PREFIX, BLOCK_END, stem)
+    }
+
+    #[test]
+    fn test_generate() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir_path = dir.path();
+        let write_path = dir_path.join("write.gitignore");
+
+
+        // Assert that [generate] correctly formats and writes the contents.
+        let rust_path = dir_path.join("rust.gitignore");
+        let rust_contents = "target/\nCargo.lock";
+        fs::write(rust_path.clone(), rust_contents).unwrap();
+        let rust_block = format_as_block("rust", rust_contents); // The expected block formatting.
+        generate(&write_path, &vec![rust_path.clone()]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            cascade!{
+                rust_block.clone();
+                ..push_str("\n");
+            });
+
+
+        // Assert that [generate] correctly formats and appends the contents.
+        let python_path = dir_path.join("python.gitignore");
+        let python_contents = "build/\ndist/";
+        fs::write(python_path.clone(), python_contents).unwrap();
+        let python_block = format_as_block("python", python_contents);
+        generate(&write_path, &vec![python_path.clone()]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            cascade! {
+                rust_block.clone();
+                ..push_str("\n\n");
+                ..push_str(&python_block);
+                ..push_str("\n");
+            });
+
+
+        // Assert that [generate] correctly edits the contents when existing blocks' contents
+        // have changed.
+        let rust_contents = "target/";
+        fs::write(rust_path.clone(), rust_contents).unwrap();
+        let rust_block = format_as_block("rust", rust_contents);
+        generate(&write_path, &vec![rust_path.clone()]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            cascade! {
+                rust_block.clone();
+                ..push_str("\n\n");
+                ..push_str(&python_block);
+            });
+
+
+        // Assert that [generate] doesn't unintentionally change anything when existing blocks'
+        // contents haven't changed.
+        generate(&write_path, &vec![rust_path.clone(), python_path.clone()]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            cascade! {
+                rust_block.clone();
+                ..push_str("\n\n");
+                ..push_str(&python_block);
+            });
+
+
+        dir.close().unwrap();
     }
 }
 
