@@ -15,37 +15,29 @@ use clap::{Arg, App};
 static ENV_HOME: &str = "GITIGNORE_HOME";
 
 fn main() {
-    let files_dir = match env::var(ENV_HOME) {
-        Ok(value) => PathBuf::from(value),
-        _ => {
-            println!("{} is not set.", ENV_HOME);
-            return;
-        }
-    };
+    let files_dir = PathBuf::from(env::var(ENV_HOME)
+        .expect(format!("{} is not set.", ENV_HOME).as_str()));
         
     let matches = App::new("gitignore")
         .version("0.1.0")
-        .author("Diego Covarrubias <dcov@pm.me>")
-        .about("A tool to manage .gitignore files")
-        .arg(Arg::with_name("files")
+        .about("Manage .gitignore files")
+        .arg(Arg::with_name("current_dir")
+            .short("c")
+            .takes_value(false)
+            .required(false)
+            .help("Generate the .gitignore in the current dir.")
+            .long_help("Generate the .gitignore in the current dir instead of searching for the git repo's root directory."))
+        .arg(Arg::with_name("file_stems")
             .multiple(true)
-            .required(true))
+            .required(true)
+            .help("The case-insensitive file stems to search for, e.g. 'rust' will match 'rust.gitignore', 'RUST.gitignore', etc."))
         .get_matches();
 
-    if let Some(_language_names) = matches.values_of("language_names") {
-        let current_dir_path = match env::current_dir() {
-            Ok(p) => p,
-            _ => {
-                println!("Could not determine current dir path.");
-                return;
-            }
-        };
-
-        let _write_path = write_path::lookup(&current_dir_path, false);
-
-        let _read_paths = read_paths::lookup(&files_dir, &vec![""]);
-
-        generator::generate(&_write_path, &_read_paths);
+    if let Some(file_stems) = matches.values_of("file_stems") {
+        let current_dir_path = env::current_dir().expect("Could not determine current directory");
+        generator::generate(
+            &write_path::lookup(&current_dir_path, !matches.is_present("current_dir")),
+            &read_paths::lookup(&files_dir, &file_stems.collect()));
     }
 }
 
