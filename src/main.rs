@@ -19,7 +19,7 @@ fn main() {
         .expect(format!("{} is not set.", ENV_HOME).as_str()));
         
     let matches = App::new("gitignore")
-        .version("0.2.0")
+        .version("0.2.1")
         .about("Manage .gitignore files")
         .arg(Arg::with_name("current_dir")
             .short("c")
