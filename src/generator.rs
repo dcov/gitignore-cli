@@ -96,7 +96,7 @@ pub fn generate(into: &PathBuf, using: &Vec<PathBuf>) {
         let new_contents = fs::read_to_string(path.clone()).unwrap();
         let new_lines: Vec<&str> = new_contents.lines().collect();
 
-        let file_stem = String::from(path.file_stem().unwrap().to_str().unwrap());
+        let file_stem = String::from(path.file_stem().unwrap().to_str().unwrap()).to_ascii_lowercase();
         if let Some(block_index) = block_vec.index_of(&file_stem) {
             let block = block_vec.get(block_index);
 
