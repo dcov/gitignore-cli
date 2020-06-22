@@ -35,9 +35,17 @@ fn main() {
 
     if let Some(file_stems) = matches.values_of("file_stems") {
         let current_dir_path = env::current_dir().expect("Could not determine current directory");
-        generator::generate(
-            &write_path::lookup(&current_dir_path, !matches.is_present("current_dir")),
-            &read_paths::lookup(&files_dir, &file_stems.collect()));
+
+        let write_path = write_path::lookup(&current_dir_path, !matches.is_present("current_dir"));
+        println!("Writing to {}", write_path.to_str().unwrap());
+
+        let read_paths = read_paths::lookup(&files_dir, &file_stems.collect());
+        for path in &read_paths {
+            println!("Reading from {}", path.to_str().unwrap());
+        }
+
+        generator::generate(&write_path, &read_paths);
+        println!("Completed successfully!");
     }
 }
 
