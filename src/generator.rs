@@ -187,7 +187,7 @@ mod tests {
         let write_path = dir_path.join("write.gitignore");
 
 
-        // Assert that [generate] correctly formats and writes the contents.
+        // Assert that [insert] correctly formats and writes the contents.
         let rust_path = dir_path.join("rust.gitignore");
         let rust_contents = "target/\nCargo.lock";
         fs::write(rust_path.clone(), rust_contents).unwrap();
@@ -201,7 +201,7 @@ mod tests {
             });
 
 
-        // Assert that [generate] correctly formats and appends the contents.
+        // Assert that [insert] correctly formats and appends the contents.
         let python_path = dir_path.join("python.gitignore");
         let python_contents = "build/\ndist/";
         fs::write(python_path.clone(), python_contents).unwrap();
@@ -217,7 +217,7 @@ mod tests {
             });
 
 
-        // Assert that [generate] correctly edits the contents when existing blocks' contents
+        // Assert that [insert] correctly edits the contents when existing blocks' contents
         // have changed.
         let rust_contents = "target/";
         fs::write(rust_path.clone(), rust_contents).unwrap();
@@ -232,7 +232,7 @@ mod tests {
             });
 
 
-        // Assert that [generate] doesn't unintentionally change anything when existing blocks'
+        // Assert that [insert] doesn't unintentionally change anything when existing blocks'
         // contents haven't changed.
         insert(&write_path, &vec![rust_path.clone(), python_path.clone()]);
         assert_eq!(
