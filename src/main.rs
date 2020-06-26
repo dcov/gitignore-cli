@@ -44,7 +44,7 @@ fn main() {
             println!("Reading from {}", path.to_str().unwrap());
         }
 
-        generator::generate(&write_path, &read_paths);
+        generator::insert(&write_path, &read_paths);
         println!("Completed successfully!");
     }
 }

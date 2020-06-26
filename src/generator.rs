@@ -86,7 +86,7 @@ impl<'a> BlockVec {
     }
 }
 
-pub fn generate(into: &PathBuf, using: &Vec<PathBuf>) {
+pub fn insert(into: &PathBuf, using: &Vec<PathBuf>) {
     let into_contents = fs::read_to_string(into.clone()).unwrap_or(String::from(""));
     let mut into_lines: Vec<String> = into_contents.lines().map(|s| String::from(s)).collect();
 
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate() {
+    fn test_insert() {
         let dir = tempfile::tempdir().unwrap();
         let dir_path = dir.path();
         let write_path = dir_path.join("write.gitignore");
@@ -162,7 +162,7 @@ mod tests {
         let rust_contents = "target/\nCargo.lock";
         fs::write(rust_path.clone(), rust_contents).unwrap();
         let rust_block = format_as_block("rust", rust_contents); // The expected block formatting.
-        generate(&write_path, &vec![rust_path.clone()]);
+        insert(&write_path, &vec![rust_path.clone()]);
         assert_eq!(
             fs::read_to_string(write_path.clone()).unwrap(),
             cascade!{
@@ -176,7 +176,7 @@ mod tests {
         let python_contents = "build/\ndist/";
         fs::write(python_path.clone(), python_contents).unwrap();
         let python_block = format_as_block("python", python_contents);
-        generate(&write_path, &vec![python_path.clone()]);
+        insert(&write_path, &vec![python_path.clone()]);
         assert_eq!(
             fs::read_to_string(write_path.clone()).unwrap(),
             cascade! {
@@ -192,7 +192,7 @@ mod tests {
         let rust_contents = "target/";
         fs::write(rust_path.clone(), rust_contents).unwrap();
         let rust_block = format_as_block("rust", rust_contents);
-        generate(&write_path, &vec![rust_path.clone()]);
+        insert(&write_path, &vec![rust_path.clone()]);
         assert_eq!(
             fs::read_to_string(write_path.clone()).unwrap(),
             cascade! {
@@ -204,7 +204,7 @@ mod tests {
 
         // Assert that [generate] doesn't unintentionally change anything when existing blocks'
         // contents haven't changed.
-        generate(&write_path, &vec![rust_path.clone(), python_path.clone()]);
+        insert(&write_path, &vec![rust_path.clone(), python_path.clone()]);
         assert_eq!(
             fs::read_to_string(write_path.clone()).unwrap(),
             cascade! {
