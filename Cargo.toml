@@ -1,6 +1,6 @@
 [package]
 name = "gitignore"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Diego Covarrubias <dcov@pm.me>"]
 edition = "2018"
 
