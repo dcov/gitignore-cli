@@ -27,6 +27,11 @@ fn main() {
             .required(false)
             .help("Generate the .gitignore in the current dir.")
             .long_help("Generate the .gitignore in the current dir instead of searching for the git repo's root directory."))
+        .arg(Arg::with_name("remove")
+            .short("r")
+            .takes_value(false)
+            .required(false)
+            .help("Remove the specified file_stems from .gitignore file instead of adding them"))
         .arg(Arg::with_name("file_stems")
             .multiple(true)
             .required(true)
@@ -39,12 +44,17 @@ fn main() {
         let write_path = write_path::lookup(&current_dir_path, !matches.is_present("current_dir"));
         println!("Writing to {}", write_path.to_str().unwrap());
 
-        let read_paths = read_paths::lookup(&files_dir, &file_stems.collect());
-        for path in &read_paths {
-            println!("Reading from {}", path.to_str().unwrap());
+        if matches.is_present("remove") {
+            generator::remove(&write_path, &file_stems.collect());
+        } else {
+            let read_paths = read_paths::lookup(&files_dir, &file_stems.collect());
+            for path in &read_paths {
+                println!("Reading from {}", path.to_str().unwrap());
+            }
+
+            generator::insert(&write_path, &read_paths);
         }
 
-        generator::insert(&write_path, &read_paths);
         println!("Completed successfully!");
     }
 }
