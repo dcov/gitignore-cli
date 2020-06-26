@@ -142,7 +142,7 @@ pub fn insert(into: &PathBuf, using: &Vec<PathBuf>) {
         .expect(format!("Failed to write result to {}", into.to_str().unwrap()).as_str());
 }
 
-pub fn remove(from: &PathBuf, using: &Vec<String>) {
+pub fn remove(from: &PathBuf, using: &Vec<&str>) {
     let from_contents = fs::read_to_string(from.clone())
         .expect(format!("{} does not exist, or is empty", from.to_str().unwrap()).as_str());
     let mut from_lines: Vec<String> = from_contents.lines().map(String::from).collect();
@@ -164,6 +164,10 @@ pub fn remove(from: &PathBuf, using: &Vec<String>) {
             block_vec.shift_starts_down(block_index, block.size + 2);
         }
     }
+
+    let result = from_lines.join("\n");
+    fs::write(from, result.as_bytes())
+        .expect(format!("Failed to write result to {}", from.to_str().unwrap()).as_str());
 }
 
 #[cfg(test)]
@@ -243,6 +247,42 @@ mod tests {
                 ..push_str(&python_block);
             });
 
+
+        dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_remove() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir_path = dir.path();
+        let write_path = dir_path.join("write.gitignore");
+
+        let rust_block = format_as_block("rust", "target/\nCargo.lock");
+        let dart_block = format_as_block("dart", "build/");
+        let python_block = format_as_block("python", "build/\ndist/");
+        let user_defined_lines = "user_file\nuser_dir/";
+
+        // Generate the test write file
+        fs::write(write_path.clone(),
+            format!("{}\n\n{}\n\n{}\n{}", rust_block, dart_block, python_block, user_defined_lines)).unwrap();
+
+        // Assert that [remove] does not remove anything if there are no matches.
+        remove(&write_path, &vec!["random_lang"]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            format!("{}\n\n{}\n\n{}\n{}", rust_block, dart_block, python_block, user_defined_lines));
+
+        // Assert that [remove] successfully removes the specified block
+        remove(&write_path, &vec!["rust"]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            format!("\n{}\n\n{}\n{}", dart_block, python_block, user_defined_lines));
+
+        // Asser that [remove] successfully removes the multiple specified blocks
+        remove(&write_path, &vec!["dart", "python"]);
+        assert_eq!(
+            fs::read_to_string(write_path.clone()).unwrap(),
+            format!("\n\n{}", user_defined_lines));
 
         dir.close().unwrap();
     }
