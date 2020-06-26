@@ -19,7 +19,13 @@ struct BlockVec {
 
 impl<'a> BlockVec {
 
-    fn get(&self, index: usize) -> &Block { &self.vec[index] }
+    fn get(&self, index: usize) -> &Block {
+        &self.vec[index]
+    }
+
+    fn remove(&mut self, index: usize) -> Block {
+        self.vec.remove(index)
+    }
 
     fn from(lines: &Vec<String>) -> BlockVec {
         let mut bv = BlockVec { vec: Vec::new() };
@@ -88,7 +94,7 @@ impl<'a> BlockVec {
 
 pub fn insert(into: &PathBuf, using: &Vec<PathBuf>) {
     let into_contents = fs::read_to_string(into.clone()).unwrap_or(String::from(""));
-    let mut into_lines: Vec<String> = into_contents.lines().map(|s| String::from(s)).collect();
+    let mut into_lines: Vec<String> = into_contents.lines().map(String::from).collect();
 
     let mut block_vec = BlockVec::from(&into_lines);
 
@@ -134,6 +140,30 @@ pub fn insert(into: &PathBuf, using: &Vec<PathBuf>) {
     let result = into_lines.join("\n");
     fs::write(into, result.as_bytes())
         .expect(format!("Failed to write result to {}", into.to_str().unwrap()).as_str());
+}
+
+pub fn remove(from: &PathBuf, using: &Vec<String>) {
+    let from_contents = fs::read_to_string(from.clone())
+        .expect(format!("{} does not exist, or is empty", from.to_str().unwrap()).as_str());
+    let mut from_lines: Vec<String> = from_contents.lines().map(String::from).collect();
+    let mut block_vec = BlockVec::from(&from_lines);
+
+    for name in using {
+        if let Some(block_index) = block_vec.index_of(&name.to_ascii_lowercase()) {
+            // Remove the block from the list of blocks
+            let block = block_vec.remove(block_index);
+
+            // Remove the block's lines
+            from_lines.remove(block.start);
+            for _ in 0..block.size {
+                from_lines.remove(block.start);
+            }
+            from_lines.remove(block.start);
+
+            // Shift the remaining blocks down by the block size + 2
+            block_vec.shift_starts_down(block_index, block.size + 2);
+        }
+    }
 }
 
 #[cfg(test)]
