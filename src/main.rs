@@ -31,17 +31,23 @@ fn main() {
             .short("r")
             .takes_value(false)
             .required(false)
-            .help("Remove the specified file_stems from .gitignore file instead of adding them"))
+            .help("Remove the specified file_stems from .gitignore file instead of adding them."))
+        .arg(Arg::with_name("list")
+            .short("l")
+            .takes_value(false)
+            .required(false)
+            .help("List the current file_stems.")
+            .long_help("List the current file_stems. This will run after any other commands."))
         .arg(Arg::with_name("file_stems")
             .multiple(true)
-            .required(true)
+            .required_unless("list")
             .help("The case-insensitive file stems to search for, e.g. 'rust' will match 'rust.gitignore', 'RUST.gitignore', etc."))
         .get_matches();
 
-    if let Some(file_stems) = matches.values_of("file_stems") {
-        let current_dir_path = env::current_dir().expect("Could not determine current directory");
+    let current_dir_path = env::current_dir().expect("Could not determine current directory");
+    let write_path = write_path::lookup(&current_dir_path, !matches.is_present("current_dir"));
 
-        let write_path = write_path::lookup(&current_dir_path, !matches.is_present("current_dir"));
+    if let Some(file_stems) = matches.values_of("file_stems") {
         println!("Writing to {}", write_path.to_str().unwrap());
 
         if matches.is_present("remove") {
@@ -55,7 +61,11 @@ fn main() {
             generator::insert(&write_path, &read_paths);
         }
 
-        println!("Completed successfully!");
+        println!("Generated successfully!");
+    }
+
+    if matches.is_present("list") {
+        generator::list(&write_path);
     }
 }
 
