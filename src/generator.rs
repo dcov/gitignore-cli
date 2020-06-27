@@ -27,6 +27,10 @@ impl<'a> BlockVec {
         self.vec.remove(index)
     }
 
+    fn len(&self) -> usize {
+        self.vec.len()
+    }
+
     fn from(lines: &Vec<String>) -> BlockVec {
         let mut bv = BlockVec { vec: Vec::new() };
 
@@ -168,6 +172,18 @@ pub fn remove(from: &PathBuf, using: &Vec<&str>) {
     let result = from_lines.join("\n");
     fs::write(from, result.as_bytes())
         .expect(format!("Failed to write result to {}", from.to_str().unwrap()).as_str());
+}
+
+pub fn list(from: &PathBuf) {
+    let contents = fs::read_to_string(from.clone())
+        .expect(format!("{} does not exist, or is empty", from.to_str().unwrap()).as_str());
+    let lines: Vec<String> = contents.lines().map(String::from).collect();
+    let block_vec = BlockVec::from(&lines);
+
+    for i in 0..block_vec.len() {
+        let block = block_vec.get(i);
+        println!("{}", block.name);
+    }
 }
 
 #[cfg(test)]
