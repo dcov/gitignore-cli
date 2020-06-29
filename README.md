@@ -54,3 +54,8 @@ By default <file_stems> arguments are used to generate/modify blocks with those 
 
 #### *-l*
 List the current block names in the generated .gitignore file.
+
+#### *-s*
+Sync the exisiting .gitignore blocks with the source $GITIGNORE_HOME files.
+
+This is useful if you've updated the source $GITIGNORE_HOME files, and want to update the generated .gitignore file.
