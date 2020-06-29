@@ -174,16 +174,18 @@ pub fn remove(from: &PathBuf, using: &Vec<&str>) {
         .expect(format!("Failed to write result to {}", from.to_str().unwrap()).as_str());
 }
 
-pub fn list(from: &PathBuf) {
+pub fn get_block_names(from: &PathBuf) -> Vec<String> {
     let contents = fs::read_to_string(from.clone())
         .expect(format!("{} does not exist, or is empty", from.to_str().unwrap()).as_str());
     let lines: Vec<String> = contents.lines().map(String::from).collect();
     let block_vec = BlockVec::from(&lines);
 
+    let mut names: Vec<String> = Vec::new();
     for i in 0..block_vec.len() {
         let block = block_vec.get(i);
-        println!("{}", block.name);
+        names.push(block.name.clone());
     }
+    names
 }
 
 #[cfg(test)]

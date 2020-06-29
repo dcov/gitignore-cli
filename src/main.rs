@@ -65,7 +65,10 @@ fn main() {
     }
 
     if matches.is_present("list") {
-        generator::list(&write_path);
+        let names = generator::get_block_names(&write_path);
+        for name in names {
+            println!("{}", name);
+        }
     }
 }
 
