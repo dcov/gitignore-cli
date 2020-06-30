@@ -304,5 +304,29 @@ mod tests {
 
         dir.close().unwrap();
     }
+
+    #[test]
+    fn test_get_block_names() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir_path = dir.path();
+        let write_path = dir_path.join("write.gitignore");
+
+        let rust_path = dir_path.join("rust.gitignore");
+        fs::write(rust_path.clone(), "target/").unwrap();
+
+        let python_path = dir_path.join("python.gitignore");
+        fs::write(python_path.clone(), "build/").unwrap();
+
+        let js_path = dir_path.join("js.gitignore");
+        fs::write(js_path.clone(), "dist/").unwrap();
+
+        insert(&write_path, &vec![rust_path, python_path, js_path]);
+
+        // Assert that we get the names of the files we used in [insert] in the same order.
+        let result = get_block_names(&write_path);
+        assert_eq!(result, vec!["rust", "python", "js"]);
+
+        dir.close().unwrap();
+    }
 }
 
