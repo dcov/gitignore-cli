@@ -9,7 +9,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-fn validate_path(path: &PathBuf, with: &mut Vec<&str>) -> bool {
+fn validate_path(path: &PathBuf, with: &mut Vec<String>) -> bool {
     !path.is_dir()
     && match path.extension() {
         Some(extension) => extension == "gitignore",
@@ -38,7 +38,7 @@ fn validate_path(path: &PathBuf, with: &mut Vec<&str>) -> bool {
     }
 }
 
-pub fn lookup<'a>(from: &PathBuf, with: &Vec<&str>) -> Vec<PathBuf> {
+pub fn lookup<'a>(from: &PathBuf, with: &Vec<String>) -> Vec<PathBuf> {
     let mut with = with.clone();
     let from_dir = fs::read_dir(from).expect(
         format!("Could not read from {}", from.to_str().unwrap()).as_str());
@@ -90,7 +90,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let dir_path = dir.path().to_path_buf();
 
-        let with = vec!["dir", "rust", "Lua", "HASKELL", "java", "Casing"]; 
+        let with = vec!["dir".to_owned(), "rust".to_owned(), "Lua".to_owned(), "HASKELL".to_owned(), "java".to_owned(), "Casing".to_owned()]; 
 
         // Assert that [lookup] returns an empty list when the directory doesn't
         // contain any files that match the '*.gitignore' pattern.
