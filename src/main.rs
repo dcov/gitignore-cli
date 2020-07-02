@@ -14,6 +14,23 @@ use clap::{Arg, App};
 
 static ENV_HOME: &str = "GITIGNORE_HOME";
 
+fn print_block_names(names: &Vec<String>) {
+    for name in names {
+        println!("{}", name);
+    }
+}
+
+fn sync(write_path: &PathBuf, files_dir: &PathBuf, print_names: bool) {
+    let names = generator::get_block_names(&write_path);
+    let read_paths = read_paths::lookup(&files_dir, &names);
+    generator::insert(&write_path, &read_paths);
+    println!("Synced successfully!");
+
+    if print_names {
+        print_block_names(&names);
+    }
+}
+
 fn main() {
     let files_dir = PathBuf::from(env::var(ENV_HOME)
         .expect(format!("{} is not set.", ENV_HOME).as_str()));
@@ -38,9 +55,14 @@ fn main() {
             .required(false)
             .help("List the current file_stems.")
             .long_help("List the current file_stems. This will run after any other commands."))
+        .arg(Arg::with_name("sync")
+            .short("s")
+            .takes_value(false)
+            .required(false)
+            .help("Sync the exisiting .gitignore blocks with the source $GITIGNORE_HOME files."))
         .arg(Arg::with_name("file_stems")
             .multiple(true)
-            .required_unless("list")
+            .required_unless_one(&["list", "sync"])
             .help("The case-insensitive file stems to search for, e.g. 'rust' will match 'rust.gitignore', 'RUST.gitignore', etc."))
         .get_matches();
 
@@ -53,7 +75,7 @@ fn main() {
         if matches.is_present("remove") {
             generator::remove(&write_path, &file_stems.collect());
         } else {
-            let read_paths = read_paths::lookup(&files_dir, &file_stems.collect());
+            let read_paths = read_paths::lookup(&files_dir, &file_stems.map(String::from).collect());
             for path in &read_paths {
                 println!("Reading from {}", path.to_str().unwrap());
             }
@@ -64,11 +86,38 @@ fn main() {
         println!("Generated successfully!");
     }
 
-    if matches.is_present("list") {
-        let names = generator::get_block_names(&write_path);
-        for name in names {
-            println!("{}", name);
-        }
+    if matches.is_present("sync") {
+        sync(&write_path, &files_dir, matches.is_present("list"));
+    } else if matches.is_present("list") {
+        print_block_names(&generator::get_block_names(&write_path));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    
+    use super::*;
+    use std::fs;
+    use cascade;
+    use tempfile;
+
+    #[test]
+    fn test_sync() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir_path = dir.path();
+        let write_path = dir_path.join("write_file");
+
+        let rust_path = dir_path.join("rust.gitignore");
+        let mut rust_contents = "target/";
+        fs::write(rust_path.clone(), rust_contents).unwrap();
+
+        let js_path = dir_path.join("js.gitignore");
+        let mut js_contents = "dist/";
+        fs::write(js_path.clone(), js_contents).unwrap();
+
+        generator::insert(&write_path, &vec![rust_path.clone(), js_path.clone()]);
+
+        dir.close().unwrap();
     }
 }
 
